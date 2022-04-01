@@ -1,0 +1,583 @@
+/******************************************************************************/
+/* PROJECT          : HKMC NU2 BCC (Climate Control Unit)                  */
+/******************************************************************************/
+/* !Layer           : IOAL                                                    */
+/*                                                                            */
+/* !Component       : DIO                                                     */
+/* !Description     : Hardware Abstraction Layer                              */
+/*                                                                            */
+/* !Module          : DIO                                                     */
+/* !Description     : Digital input/output module                             */
+/*                                                                            */
+/* !File            : DIO.c                                                   */
+/*                                                                            */
+/* !Scope           : static                                                  */
+/*                                                                            */
+/* !Target          : NXP FS32K144 HAT0VLLR                                   */
+/*                                                                            */
+/* !Vendor          : VIAS (VALEO INTERBRANCH AUTOMOTIVE SOFTWARE)            */
+/*                                                                            */
+/* Coding language  : C                                                       */
+/*                                                                            */
+/* COPYRIGHT 2019 VALEO                                                       */
+/* All Rights Reserved                                                        */
+/*                                                                            */
+/******************************************************************************/
+
+
+/******************************************************************************/
+/* INCLUDE FILES                                                              */
+/******************************************************************************/
+#include "DIO.h"
+//#include "PWR_Handler.h"
+
+
+/******************************************************************************/
+/* TYPES                                                                      */
+/******************************************************************************/
+
+/*! \Trace_To: HVAC_SCD_IOAL_0113#01 */
+/*!Comment: Din pin descriptor                                                */
+typedef struct
+{
+  /*!Comment: Pin index in the DIN pins configuration array                   */
+      GPIO_Type * ptru32DINPortAdd;
+  /*!Comment: Pin index in the DOUT pins configuration array                  */
+  /*!Range: 0..DIO_u8NUM_OF_OUTPUTS-1                                         */
+      uint8 u8PinIndex;
+} tstrDIOPortPin;
+
+/*! \Trace_To: HVAC_SCD_IOAL_0114#01 */
+typedef struct
+{
+  /* !Comment: Pointer to a PMC register of the pin                           */
+  volatile uint8* const kpvu8PortModeCtrlReg;
+  /* !Comment: Pointer to a PM register of the pin                            */
+  volatile uint8* const kpvu8PortModeReg;
+  /* !Comment: Pointer to a P register of the pin                             */
+  volatile uint8* const kpvu8PortDataReg;
+  /* !Comment: Mask for the pin position in the configuration registers       */
+  const uint8 ku8PinIndex;
+  /* !Comment: The default value of the pin                                   */
+  const uint8 ku8DefaultValue;
+} tstrDOUTData;
+
+/******************************************************************************/
+/* CONSTANTS, MACROS                                                          */
+/******************************************************************************/
+#define IO_POWER_OFF_MODE    PORT_PIN_DISABLED
+const pin_settings_config_t g_pin_EnterSleepConfigArr[] =
+{
+    {
+        .base          = PORTC, //SPI0_CSN0
+        .pinPortIdx    = 8u,
+        .pullConfig    = PORT_INTERNAL_PULL_NOT_ENABLED,
+        .passiveFilter = false,
+        .driveSelect   = PORT_LOW_DRIVE_STRENGTH,
+        .mux           = IO_POWER_OFF_MODE,
+        .pinLock       = false,
+        .intConfig     = PORT_DMA_INT_DISABLED,
+        .clearIntFlag  = false,
+        .gpioBase      = PTB,
+        .direction     = GPIO_INPUT_DIRECTION,
+        .digitalFilter = false,
+    },
+
+    {
+        .base          = PORTC, //SPI0_CSN1
+        .pinPortIdx    = 9u,
+        .pullConfig    = PORT_INTERNAL_PULL_NOT_ENABLED,
+        .passiveFilter = false,
+        .driveSelect   = PORT_LOW_DRIVE_STRENGTH,
+        .mux           = IO_POWER_OFF_MODE,
+        .pinLock       = false,
+        .intConfig     = PORT_DMA_INT_DISABLED,
+        .clearIntFlag  = false,
+        .gpioBase      = PTB,
+        .direction     = GPIO_INPUT_DIRECTION,
+        .digitalFilter = false,
+    },
+    
+    {
+        .base          = PORTB, //SPI0_SDO
+        .pinPortIdx    = 1u,
+        .pullConfig    = PORT_INTERNAL_PULL_NOT_ENABLED,
+        .passiveFilter = false,
+        .driveSelect   = PORT_LOW_DRIVE_STRENGTH,
+        .mux           = IO_POWER_OFF_MODE,
+        .pinLock       = false,
+        .intConfig     = PORT_DMA_INT_DISABLED,
+        .clearIntFlag  = false,
+        .gpioBase      = PTB,
+        .direction     = GPIO_INPUT_DIRECTION,
+        .digitalFilter = false,
+    },
+
+    {
+        .base          = PORTB, //SPI0_SCK
+        .pinPortIdx    = 2u,
+        .pullConfig    = PORT_INTERNAL_PULL_NOT_ENABLED,
+        .passiveFilter = false,
+        .driveSelect   = PORT_LOW_DRIVE_STRENGTH,
+        .mux           = IO_POWER_OFF_MODE,
+        .pinLock       = false,
+        .intConfig     = PORT_DMA_INT_DISABLED,
+        .clearIntFlag  = false,
+        .gpioBase      = PTB,
+        .direction     = GPIO_INPUT_DIRECTION,
+        .digitalFilter = false,
+    },    
+
+    {
+        .base          = PORTB, //SPI0_SDI
+        .pinPortIdx    = 3u,
+        .pullConfig    = PORT_INTERNAL_PULL_NOT_ENABLED,
+        .passiveFilter = false,
+        .driveSelect   = PORT_LOW_DRIVE_STRENGTH,
+        .mux           = IO_POWER_OFF_MODE,
+        .pinLock       = false,
+        .intConfig     = PORT_DMA_INT_DISABLED,
+        .clearIntFlag  = false,
+        .gpioBase      = PTB,
+        .direction     = GPIO_INPUT_DIRECTION,
+        .digitalFilter = false,
+    },    
+    
+    {
+        .base          = PORTD,  //LIN_RX
+        .pinPortIdx    = 6u,
+        .pullConfig    = PORT_INTERNAL_PULL_NOT_ENABLED,
+        .passiveFilter = false,
+        .driveSelect   = PORT_LOW_DRIVE_STRENGTH,
+        .mux           = IO_POWER_OFF_MODE,
+        .pinLock       = false,
+        .intConfig     = PORT_DMA_INT_DISABLED,
+        .clearIntFlag  = false,
+        .gpioBase      = PTC,
+        .direction     = GPIO_INPUT_DIRECTION,
+        .digitalFilter = false,
+    },    
+
+    {
+        .base          = PORTD,  //LIN_TX
+        .pinPortIdx    = 7u,
+        .pullConfig    = PORT_INTERNAL_PULL_NOT_ENABLED,
+        .passiveFilter = false,
+        .driveSelect   = PORT_LOW_DRIVE_STRENGTH,
+        .mux           = IO_POWER_OFF_MODE,
+        .pinLock       = false,
+        .intConfig     = PORT_DMA_INT_DISABLED,
+        .clearIntFlag  = false,
+        .gpioBase      = PTC,
+        .direction     = GPIO_INPUT_DIRECTION,
+        .digitalFilter = false,
+    },    
+    
+    {
+        .base          = PORTE, //CAN_RX
+        .pinPortIdx    = 4u,
+        .pullConfig    = PORT_INTERNAL_PULL_NOT_ENABLED,
+        .passiveFilter = false,
+        .driveSelect   = PORT_LOW_DRIVE_STRENGTH,
+        .mux           = IO_POWER_OFF_MODE,
+        .pinLock       = false,
+        .intConfig     = PORT_DMA_INT_DISABLED,
+        .clearIntFlag  = false,
+        .gpioBase      = PTE,
+        .direction     = GPIO_INPUT_DIRECTION,
+        .digitalFilter = false,
+    },    
+
+    {
+        .base          = PORTE,  //CAN_TX
+        .pinPortIdx    = 5u,
+        .pullConfig    = PORT_INTERNAL_PULL_NOT_ENABLED,
+        .passiveFilter = false,
+        .driveSelect   = PORT_LOW_DRIVE_STRENGTH,
+        .mux           = IO_POWER_OFF_MODE,
+        .pinLock       = false,
+        .intConfig     = PORT_DMA_INT_DISABLED,
+        .clearIntFlag  = false,
+        .gpioBase      = PTE,
+        .direction     = GPIO_INPUT_DIRECTION,
+        .digitalFilter = false,
+    }
+};
+
+#define NUM_OF_SLEEPMODE_SET_PINS   (sizeof(g_pin_EnterSleepConfigArr)/sizeof(pin_settings_config_t))
+
+
+
+/******************************************************************************/
+/* static VARIABLES                                                           */
+/******************************************************************************/
+
+/* MISRA_Justification: for readability of configuration structure  */
+/*!Comment: Digital input pins configuration structure */
+/*! \Trace_To: HVAC_SCD_IOAL_0116#01 */
+static const tstrDIOPortPin akstrDinData[DIO_u8NB_DIN] =
+{
+    /* MISRA_Justification: because of definition from NEC  */
+    /* PRQA S 0303 30 */ /* PRQA S 1281 30 */ /* PRQA S 2855 30 */
+
+    /***added in C281***/
+    /*!Comment:   DI_FAN_FB                                 */
+    {PTA,0u},
+
+	/*!Comment:   DI_HOT_FB                                 */
+	{PTC,7u},
+
+	/*!Comment:  DI_PEU_FB                                  */
+    {PTE,2u},
+    
+	/*!Comment:  DI_INTERCOOLER_FB                          */
+    {PTE,6u},
+    /***end of added in C281***/
+
+    /*!Comment: CAN ERROR PIN                                */
+    {PTD,0u},
+    
+    /*!Comment: LEN ENABLE                                   */
+    {PTD,5u},
+
+    /*!Comment: LIN TX                                       */
+    {PTD,7u},
+
+    /*!Comment: LIN RX                                       */
+    {PTD,6u},
+
+    
+#if  0
+    /*!Comment: Recirculation Push-Button pin                                 */
+    {PTB,13u},
+
+    /*!Comment: Mode Push-Button pin                                          */
+    {PTB,12u},
+
+    /*!Comment: Front DEFROST Push-Button                                     */
+    {PTD,3u},
+
+    /*!Comment: Rear DEFROST Push-Button pi                                   */
+    {PTD,4u},
+
+    /*!Comment: A/C Push-Button                                               */
+    {PTD,2u},
+
+    /*!Comment: OFF Push-Button                                               */
+    {PTB,11u},
+
+    /*!Comment: AUTO Push-Button                                              */
+    {PTB,10u},
+#endif
+};
+
+/* MISRA_Justification: for readability of configuration structure  */
+/*!Comment: Digital output pins configuration structure                       */
+/*! \Trace_To: HVAC_SCD_IOAL_0133#01 */
+static const tstrDIOPortPin akstrDoutData[DIO_u8NUM_OF_OUTPUTS] =
+{
+    /* MISRA_Justification: because of definition from NEC   */
+    /* PRQA S 0303 30 */ /* PRQA S 1281 30 */ /* PRQA S 2855 30 */
+
+    /*!Comment: LIN ENABLE                               */
+    {PTD,5u},
+
+    /*!Comment: CAN Standby                              */
+    {PTE,11u},
+
+    /*!Comment: CAN ENABLE                               */
+    {PTE,9u},
+
+    /*!Comment: WATCHDOG                                 */
+    {PTE,7u},
+    
+    /*!Comment: SPI CS1                                  */
+    {PTC,8u},
+
+    /*!Comment: SPI CS2                                  */
+    {PTC,9u},
+
+
+	/*!Comment: DC MOTOR Chip Enable                       */
+    //{PTE,7u},
+	
+	/*!Comment: EEPROM Write Protect					   */
+	//{PTE,2u},
+	
+    /*!Comment: EEPROM Chip Select						   */
+    //{PTC,14u},
+	
+	/*!Comment: 5V_EN									   */
+	//{PTB,5u},
+};
+/*! \Trace_To: HVAC_SCD_IOAL_0115#01 */
+/*!Comment : Number of digital input used                  */
+/*static uint8 DIO_u8NumberOfInputs = (uint8)DIO_u8NB_DIN;*/
+
+/******************************************************************************/
+/* static FUNCTIONS PROTOTYPES                                                */
+/******************************************************************************/
+
+/******************************************************************************/
+/* !Description : Read the current level of the required digital input pin    */
+/******************************************************************************/
+/*! \Trace_To: HVAC_SCD_IOAL_0131#01 */
+static uint8 u8ReadInputPin
+(
+  /*!Comment: Pin index in the DIN pins configuration array                   */
+  const GPIO_Type * ptru32DINPortAdd,
+
+  /*!Comment: Pin index in the DIN pins configuration array                   */
+  /*!Range: 0..MCAL_u8NB_DIN-1                                                */
+  uint8 u8PinIndex
+);
+
+
+/******************************************************************************/
+/* !Description : Write the the required value on the digital output pin      */
+/******************************************************************************/
+/*! \Trace_To: HVAC_SCD_IOAL_0132#01 */
+static void vidWriteOnOutputPin
+(
+  /*!Comment: Pin index in the DIN pins configuration array                   */
+  GPIO_Type * ptru32DINPortAdd,
+
+  /*!Comment: Pin index in the DOUT pins configuration array                  */
+  /*!Range: 0..DIO_u8NUM_OF_OUTPUTS-1                                         */
+  uint32 u32PinIndex,
+
+  /*!Comment: value to output on the pin                                      */
+  /*!Range: 0..1                                                              */
+  uint8 u8Value
+);
+
+
+/******************************************************************************/
+/* EXPORTED FUNCTIONS                                                         */
+/******************************************************************************/
+
+/******************************************************************************/
+/* !Function      : DIO_vidInit                                               */
+/* !Description   : Initialization routine for HWI DIO                        */
+/* !Trace_To      :                                                           */
+/* !Parameters[in]:    void                                                        */
+/* !Comment       :                                                           */
+/* !Range         :                                                           */
+/* !Return        : void                                                       */
+/* !Range         :                                                           */
+/*!Trace_To       : HVAC_SCD_IOAL_0023#01,HVAC_SCD_IOAL_0064#01 */
+/******************************************************************************/
+extern void DIO_vidInit
+(
+    /*!Comment: Detected PCB variant                                          */
+    /*!Range  : 0..1                                                          */
+
+    void
+)
+{
+    /* Initialize pins
+     *  -   See PinSettings component for more info
+     */
+    (void) PINS_DRV_Init((uint32_t)NUM_OF_CONFIGURED_PINS, g_pin_mux_InitConfigArr);
+    //PWR_vidMcuPowerON();
+}
+
+/******************************************************************************/
+/* !Function      : DIO_vidRefreshPorts                                       */
+/* !Description   : Refresh I/O ports initialization and initialize           */
+/*                    unused pins    as input                                      */
+/* !Trace_To      :                                                           */
+/* !Parameters[in]:    void                                                        */
+/* !Comment       :                                                           */
+/* !Range         :                                                           */
+/* !Return        : void                                                       */
+/* !Range         :                                                           */
+/*!Trace_To       : HVAC_SCD_IOAL_0065#01,HVAC_SCD_IOAL_0066#01 */
+/******************************************************************************/
+extern void DIO_vidRefreshPorts(void)
+{
+    /* refresh configuration of all used pins and configure
+     * unused pins as input */
+#if 0
+    /* refresh PORT A */
+    PINS_DRV_SetPinsDirection(PTA, (pins_channel_type_t)DIO_PORTA_PINS_DIRECTION_MASK);
+
+    /* refresh PORT B */
+    PINS_DRV_SetPinsDirection(PTB, (pins_channel_type_t)DIO_PORTB_PINS_DIRECTION_MASK);
+
+    /* refresh PORT C */
+    PINS_DRV_SetPinsDirection(PTC, (pins_channel_type_t)DIO_PORTC_PINS_DIRECTION_MASK);
+
+    /* refresh PORT D */
+    PINS_DRV_SetPinsDirection(PTD, (pins_channel_type_t)DIO_PORTD_PINS_DIRECTION_MASK);
+
+    /* refresh PORT E */
+    PINS_DRV_SetPinsDirection(PTE, (pins_channel_type_t)DIO_PORTE_PINS_DIRECTION_MASK);
+#endif
+}/* End of DIO_vidUnusedIOInit(void) */
+
+/******************************************************************************/
+/* !Function      : DIO_u8DinRead                                             */
+/* !Description   : Read a value of a digital input                           */
+/* !Trace_To      :                                                           */
+/* !Parameters[in]:    u8DOUTIdentifier                                          */
+/* !Comment       : Value of the DIN                                          */
+/* !Range         : 0..DIO_u8NB_DIN-1                                         */
+/* !Return        : void                                                       */
+/* !Range         :                                                           */
+/*!Trace_To       : HVAC_SCD_IOAL_0024#01,HVAC_SCD_IOAL_0067#01 */
+/******************************************************************************/
+extern uint8 DIO_u8DinRead
+(
+    /*!Comment: Pin index in the DIN pins configuration array                 */
+    uint8 u8DINIdentifier
+)
+{
+  uint8 u8Result = (uint8)0;
+
+  /* Determine the level of PUSH_RECI by reading and ORing the values on
+           pins P55 and P54 ( if P55 or P54 is pressed, then the PUSH_RECI is
+           considered pressed                                                 */
+  if(u8DINIdentifier < DIO_u8NB_DIN)
+  {
+
+      u8Result = (uint8)u8ReadInputPin(
+              akstrDinData[u8DINIdentifier].ptru32DINPortAdd,
+              akstrDinData[u8DINIdentifier].u8PinIndex);
+  }
+  /* !Pseudo: The result is an error value                                    */
+  return u8Result;
+}
+
+
+/******************************************************************************/
+/* !Function      : DIO_vidWrite                                              */
+/* !Description   : Write a value of a logical output                         */
+/* !Trace_To      :                                                           */
+/* !Parameters[in]:    u8DOUTIdentifier                                          */
+/* !Comment       : Pin index in the DIN pins configuration array             */
+/* !Range         : 0..DIO_u8NUM_OF_OUTPUTS (14)                              */
+/* !Parameters[in]:    u8Value                                                   */
+/* !Comment       : value to output on the pin                                */
+/* !Range         : 0..1                                                      */
+/* !Return        : void                                                       */
+/* !Range         :                                                           */
+/*!Trace_To       : HVAC_SCD_IOAL_0025#01,HVAC_SCD_IOAL_0070#01 */
+/******************************************************************************/
+extern void DIO_vidWrite
+(
+    /*!Comment: Pin index in the DIN pins configuration array                 */
+    uint8 u8DOUTIdentifier,
+    /*!Comment: value to output on the pin                                    */
+    /*!Range: 0..1                                                            */
+    uint8 u8Value
+)
+{
+    if(u8DOUTIdentifier < DIO_u8NUM_OF_OUTPUTS)
+    {
+        /*!Pseudo: Check if output value is 0 or 1                            */
+        if (u8Value <= (uint8)1)
+        {
+            /*!Pseudo: Write the output value on the pin                      */
+            vidWriteOnOutputPin(akstrDoutData[u8DOUTIdentifier].ptru32DINPortAdd,
+                                akstrDoutData[u8DOUTIdentifier].u8PinIndex,
+                                u8Value);
+        }
+        else
+        {
+            /* !Pseudo: Report Error using error module if it is configured   */
+        }
+    }
+}
+
+/******************************************************************************/
+/* !Function      : u8ReadInputPin                                            */
+/* !Description   : Read the current level of the required digital input pin  */
+/* !Trace_To      :                                                           */
+/* !Parameters[in]:                                                              */
+/* !Comment       : Value of the required digital input pin                   */
+/* !Range         : 0..1                                                      */
+/* !Return        : void                                                       */
+/* !Range         :                                                           */
+/******************************************************************************/
+/* !Trace_To: HVAC_SCD_IOAL_0131#01 */
+static uint8  u8ReadInputPin
+(
+ /*!Comment: Pin index in the DIN pins configuration array                    */
+  const GPIO_Type * ptru32DINPortAdd,
+  /*!Comment: Pin index in the DIN pins configuration array                   */
+  /*!Range: 0..MCAL_u8NB_DIN-1                                                */
+  uint8 u8PinIndex
+)
+{
+    uint8 u8Result;
+    uint32 u32Temp;
+    /*!Pseudo: Read the Port Data register (Pn) of the pin to determine
+               it level                                                       */
+    u32Temp = (uint32)PINS_DRV_ReadPins(ptru32DINPortAdd);
+    u8Result= (uint8)((u32Temp >> (uint32)u8PinIndex ) & 1u);
+    /*!Pseudo: Return the current level of the pin                            */
+    return u8Result;
+}
+
+/******************************************************************************/
+/* !Function      : vidWriteOnOutputPin                                       */
+/* !Description   : Write the the required value on the digital output pin    */
+/* !Trace_To      :                                                           */
+/* !Parameters[in]:    ptru32DINPortAdd                                          */
+/* !Comment       : port ID address                                           */
+/* !Range         : PTA, PTB, PTC, PTD, PTE                                   */
+/* !Parameters[in]:    u32PinIndex                                                  */
+/* !Comment       : Pin index in the DOUT pins configuration array            */
+/* !Range         : 0..DIO_u8NUM_OF_OUTPUTS-1                                 */
+/* !Parameters[in]:    u8Value                                                    */
+/* !Comment       : value to output on the pin                                */
+/* !Range         : 0..1                                                      */
+/* !Return        : void                                                       */
+/* !Range         :                                                           */
+/* !Trace_To: HVAC_SCD_IOAL_0132#01 */
+/******************************************************************************/
+static void vidWriteOnOutputPin
+(
+  /*!Comment: Pin index in the DIN pins configuration array                   */
+  GPIO_Type * ptru32DINPortAdd,
+  /*!Comment: Pin index in the DOUT pins configuration array                  */
+  /*!Range: 0..DIO_u8NUM_OF_OUTPUTS-1                                         */
+  uint32 u32PinIndex,
+  /*!Comment: value to output on the pin                                      */
+  /*!Range: 0..1                                                              */
+  uint8 u8Value
+)
+{
+    /*!Pseudo: Write the required value in Port Data register (Pn) of the pin */
+    PINS_DRV_WritePin(ptru32DINPortAdd,
+             (uint32_t)u32PinIndex,
+                      u8Value);
+}
+
+
+/******************************************************************************/
+/* !Function      : DIO_vidDeInit                                               */
+/* !Description   : DeInitialization routine for HWI DIO                        */
+/* !Trace_To      :                                                           */
+/* !Parameters[in]:    void                                                        */
+/* !Comment       :                                                           */
+/* !Range         :                                                           */
+/* !Return        : void                                                       */
+/* !Range         :                                                           */
+/*!Trace_To       : HVAC_SCD_IOAL_0023#01,HVAC_SCD_IOAL_0064#01 */
+/******************************************************************************/
+extern void DIO_vidDeInit(void)
+{
+    /* DeInitialize pins
+     *  -   See PinSettings component for more info
+     */
+    //(void) PINS_DRV_Init((uint32_t)NUM_OF_CONFIGURED_PINS, g_pin_mux_InitConfigArr);
+    DIO_vidWrite(DIO_u8DO_CAN_EN,0u);
+    DIO_vidWrite(DIO_u8DO_CAN_STB,0u);
+    //DIO_vidWrite(DIO_u8DO_MOTOR_EN,0u);
+    DIO_vidWrite(DIO_u8DO_LIN_EN,0u);
+    //DIO_vidWrite(DIO_u8DO_EEP_WP,0u);
+    (void) PINS_DRV_Init((uint32_t)NUM_OF_SLEEPMODE_SET_PINS, g_pin_EnterSleepConfigArr);
+}
+

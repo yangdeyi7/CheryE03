@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "systemac.h": "c",
+        "if_rte_app.h": "c"
+    }
+}

@@ -1,0 +1,209 @@
+/******************************************************************************/
+/* PROJECT  :  M8X                                                            */
+/******************************************************************************/
+/*!Layer           : CRC8                                                     */
+/*                                                                            */
+/*!Component       : CRC8                                                     */
+/*!Description     : Contains the CRC8 J1850 of the Software                  */
+/*                                                                            */
+/*!Module          : CRC8                                                     */
+/*!Description     : CRC8                                                     */
+/*                                                                            */
+/*!File            : CRC8.c                                                   */
+/*                                                                            */
+/*!Scope           : Private                                                  */
+/*                                                                            */
+/*!Target          : PD70F3375                                                */
+/*                                                                            */
+/*!Vendor          : m8x (VALEO Climate Control China)                        */
+/*                                                                            */
+/* Coding language  : C                                                       */
+/*                                                                          
+*/
+/* COPYRIGHT 2013 VALEO                                                       */
+/* all rights reserved                                                        */
+/*                                                                            */
+/******************************************************************************/
+/* PVCS                                                                       */
+/******************************************************************************/
+/* !Deviation : Inhibit MISRA rule [0288]: Dollar sign is needed by configu-  */
+/*              ration management tool (PVCS)                                 */
+/******************************************************************************/
+/* MODIFICATION LOG :                                                         */
+/******************************************************************************/
+/* $Log:   V:/SWDatabase/CHJ_M01/archives/M01_CLM/04_Software/Sources/Services/CRC8.c-arc  $            
+ * 
+ *    Rev 1.1   Dec 18 2017 15:24:24   chunping.yan
+ * Add signal 0x538
+ * 
+ *    Rev 1.0   Feb 08 2017 09:52:32   chunping.yan
+ * Initial revision.
+ * 
+ *    Rev 1.0   Jun 23 2016 18:19:28   chunping.yan
+ * Initial revision.
+ * 
+ *    Rev 1.1   Mar 24 2016 15:34:02   chunping.yan
+ * ok
+ * 
+ *    Rev 1.0   Jan 07 2016 08:23:38   Jiaoyan.Luo
+ * Initial revision.
+
+*******************************************************************************/
+/******************************************************************************/
+/* INCLUDE FILES                                                              */
+/******************************************************************************/
+#include "Std_Types.h"
+#include "CRC8.h"
+
+/******************************************************************************/
+/* DEFINES                                                                    */
+/******************************************************************************/
+
+/******************************************************************************/
+/* TYPES                                                                      */
+/******************************************************************************/
+
+/******************************************************************************/
+/* DATA DEFINITION                                                            */
+/******************************************************************************/
+
+/******************************************************************************/
+/* LOCAL FUNCTION DECLARATION                                                 */
+/******************************************************************************/
+
+
+/******************************************************************************/
+/* LOCAL FUNCTION DEFINITION                                                  */
+/******************************************************************************/
+
+
+/******************************************************************************/
+/* GLOBAL FUNCTION DEFINITION                                                 */
+/******************************************************************************/
+
+/* Data definition for CRC calculation */
+/* uint8 au8DataArray[7];
+uint8 u8DataLength = 0;
+uint8 u8Index;*/ 
+/*Polynomial=0x1D*/
+const uint8 au8CRC8_J1850_TABLE[256] =
+{ 
+    0x00u, 0x1Du, 0x3Au, 0x27u, 0x74u, 0x69u, 0x4Eu, 0x53u,
+    0xE8u, 0xF5u, 0xD2u, 0xCFu, 0x9Cu, 0x81u, 0xA6u, 0xBBu,
+    0xCDu, 0xD0u, 0xF7u, 0xEAu, 0xB9u, 0xA4u, 0x83u, 0x9Eu,
+    0x25u, 0x38u, 0x1Fu, 0x02u, 0x51u, 0x4Cu, 0x6Bu, 0x76u,
+    0x87u, 0x9Au, 0xBDu, 0xA0u, 0xF3u, 0xEEu, 0xC9u, 0xD4u,
+    0x6Fu, 0x72u, 0x55u, 0x48u, 0x1Bu, 0x06u, 0x21u, 0x3Cu,
+    0x4Au, 0x57u, 0x70u, 0x6Du, 0x3Eu, 0x23u, 0x04u, 0x19u,
+    0xA2u, 0xBFu, 0x98u, 0x85u, 0xD6u, 0xCBu, 0xECu, 0xF1u,
+    0x13u, 0x0Eu, 0x29u, 0x34u, 0x67u, 0x7Au, 0x5Du, 0x40u,
+    0xFBu, 0xE6u, 0xC1u, 0xDCu, 0x8Fu, 0x92u, 0xB5u, 0xA8u,
+    0xDEu, 0xC3u, 0xE4u, 0xF9u, 0xAAu, 0xB7u, 0x90u, 0x8Du,
+    0x36u, 0x2Bu, 0x0Cu, 0x11u, 0x42u, 0x5Fu, 0x78u, 0x65u,
+    0x94u, 0x89u, 0xAEu, 0xB3u, 0xE0u, 0xFDu, 0xDAu, 0xC7u,
+    0x7Cu, 0x61u, 0x46u, 0x5Bu, 0x08u, 0x15u, 0x32u, 0x2Fu,
+    0x59u, 0x44u, 0x63u, 0x7Eu, 0x2Du, 0x30u, 0x17u, 0x0Au,
+    0xB1u, 0xACu, 0x8Bu, 0x96u, 0xC5u, 0xD8u, 0xFFu, 0xE2u,
+    0x26u, 0x3Bu, 0x1Cu, 0x01u, 0x52u, 0x4Fu, 0x68u, 0x75u,
+    0xCEu, 0xD3u, 0xF4u, 0xE9u, 0xBAu, 0xA7u, 0x80u, 0x9Du,
+    0xEBu, 0xF6u, 0xD1u, 0xCCu, 0x9Fu, 0x82u, 0xA5u, 0xB8u,
+    0x03u, 0x1Eu, 0x39u, 0x24u, 0x77u, 0x6Au, 0x4Du, 0x50u,
+    0xA1u, 0xBCu, 0x9Bu, 0x86u, 0xD5u, 0xC8u, 0xEFu, 0xF2u,
+    0x49u, 0x54u, 0x73u, 0x6Eu, 0x3Du, 0x20u, 0x07u, 0x1Au,
+    0x6Cu, 0x71u, 0x56u, 0x4Bu, 0x18u, 0x05u, 0x22u, 0x3Fu,
+    0x84u, 0x99u, 0xBEu, 0xA3u, 0xF0u, 0xEDu, 0xCAu, 0xD7u,
+    0x35u, 0x28u, 0x0Fu, 0x12u, 0x41u, 0x5Cu, 0x7Bu, 0x66u,
+    0xDDu, 0xC0u, 0xE7u, 0xFAu, 0xA9u, 0xB4u, 0x93u, 0x8Eu,
+    0xF8u, 0xE5u, 0xC2u, 0xDFu, 0x8Cu, 0x91u, 0xB6u, 0xABu,
+    0x10u, 0x0Du, 0x2Au, 0x37u, 0x64u, 0x79u, 0x5Eu, 0x43u,
+    0xB2u, 0xAFu, 0x88u, 0x95u, 0xC6u, 0xDBu, 0xFCu, 0xE1u,
+    0x5Au, 0x47u, 0x60u, 0x7Du, 0x2Eu, 0x33u, 0x14u, 0x09u,
+    0x7Fu, 0x62u, 0x45u, 0x58u, 0x0Bu, 0x16u, 0x31u, 0x2Cu,
+    0x97u, 0x8Au, 0xADu, 0xB0u, 0xE3u, 0xFEu, 0xD9u, 0xC4u
+};  
+/*Polynomial=0x2F*/
+const uint8 au8CRC8_Poly2f_TABLE[256] =
+{ 
+	0x00u,	0x2fu,	0x5eu,	0x71u,	0xbcu,	0x93u,	0xe2u,	0xcdu,
+	0x57u,	0x78u,	0x9u,	0x26u,	0xebu,	0xc4u,	0xb5u,	0x9au,
+	0xaeu,	0x81u,	0xf0u,	0xdfu,	0x12u,	0x3du,	0x4cu,	0x63u,
+	0xf9u,	0xd6u,	0xa7u,	0x88u,	0x45u,	0x6au,	0x1bu,	0x34u,
+	0x73u,	0x5cu,	0x2du,	0x2u,	0xcfu,	0xe0u,	0x91u,	0xbeu,
+	0x24u,	0x0bu,	0x7au,	0x55u,	0x98u,	0xb7u,	0xc6u,	0xe9u,
+	0xddu,	0xf2u,	0x83u,	0xacu,	0x61u,	0x4eu,	0x3fu,	0x10u,
+	0x8au,	0xa5u,	0xd4u,	0xfbu,	0x36u,	0x19u,	0x68u,	0x47u,
+	0xe6u,	0xc9u,	0xb8u,	0x97u,	0x5au,	0x75u,	0x4u,	0x2bu,
+	0xb1u,	0x9eu,	0xefu,	0xc0u,	0x0du,	0x22u,	0x53u,	0x7cu,
+	0x48u,	0x67u,	0x16u,	0x39u,	0xf4u,	0xdbu,	0xaau,	0x85u,
+	0x1fu,	0x30u,	0x41u,	0x6eu,	0xa3u,	0x8cu,	0xfdu,	0xd2u,
+	0x95u,	0xbau,	0xcbu,	0xe4u,	0x29u,	0x6u,	0x77u,	0x58u,
+	0xc2u,	0xedu,	0x9cu,	0xb3u,	0x7eu,	0x51u,	0x20u,	0x0fu,
+	0x3bu,	0x14u,	0x65u,	0x4au,	0x87u,	0xa8u,	0xd9u,	0xf6u,
+	0x6cu,	0x43u,	0x32u,	0x1du,	0xd0u,	0xffu,	0x8eu,	0xa1u,
+	0xe3u,	0xccu,	0xbdu,	0x92u,	0x5fu,	0x70u,	0x1u,	0x2eu,
+	0xb4u,	0x9bu,	0xeau,	0xc5u,	0x8u,	0x27u,	0x56u,	0x79u,
+	0x4du,	0x62u,	0x13u,	0x3cu,	0xf1u,	0xdeu,	0xafu,	0x80u,
+	0x1au,	0x35u,	0x44u,	0x6bu,	0xa6u,	0x89u,	0xf8u,	0xd7u,
+	0x90u,	0xbfu,	0xceu,	0xe1u,	0x2cu,	0x3u,	0x72u,	0x5du,
+	0xc7u,	0xe8u,	0x99u,	0xb6u,	0x7bu,	0x54u,	0x25u,	0x0au,
+	0x3eu,	0x11u,	0x60u,	0x4fu,	0x82u,	0xadu,	0xdcu,	0xf3u,
+	0x69u,	0x46u,	0x37u,	0x18u,	0xd5u,	0xfau,	0x8bu,	0xa4u,
+	0x05u,	0x2au,	0x5bu,	0x74u,	0xb9u,	0x96u,	0xe7u,	0xc8u,
+	0x52u,	0x7du,	0x0cu,	0x23u,	0xeeu,	0xc1u,	0xb0u,	0x9fu,
+	0xabu,	0x84u,	0xf5u,	0xdau,	0x17u,	0x38u,	0x49u,	0x66u,
+	0xfcu,	0xd3u,	0xa2u,	0x8du,	0x40u,	0x6fu,	0x1eu,	0x31u,
+	0x76u,	0x59u,	0x28u,	0x7u,	0xcau,	0xe5u,	0x94u,	0xbbu,
+	0x21u,	0x0eu,	0x7fu,	0x50u,	0x9du,	0xb2u,	0xc3u,	0xecu,
+	0xd8u,	0xf7u,	0x86u,	0xa9u,	0x64u,	0x4bu,	0x3au,	0x15u,
+	0x8fu,	0xa0u,	0xd1u,	0xfeu,	0x33u,	0x1cu,	0x6du,	0x42u
+};  
+/******************************************************************************/
+/*** ***/
+/*** This is a CRC callculatoin according to SAE J1850. ***/
+/*** ***/
+/******************************************************************************/
+/* 2017.08.28 LYX: change from u8Len to u32Len for support more data */
+extern uint8 Crc8_u8Calculate(uint8 u8Data[], uint32 u32Len)
+{
+    uint32 u32Index;
+    uint8 u8c;
+    uint8 u8crc;
+    u8crc = 0xFFu;
+    for (u32Index = 0u; u32Index < u32Len; u32Index++)
+    {
+        u8c = u8Data[u32Index];
+		/*
+        u8crc = au8CRC8_J1850_TABLE[u8crc ^ u8c] ;
+		*/
+		u8crc = au8CRC8_Poly2f_TABLE[u8crc ^ u8c] ;
+    }
+    u8crc ^= 0xFFu;
+    return (u8crc);
+}
+
+/* 2017.08.28 LYX: change from u8Len to u32Len for support more data */
+extern uint8 Crc8_CalXor(uint8 u8Data[], uint32 u32Len)
+{
+    uint32 u32Index;
+    uint8 u8crc;
+    u8crc = 0u;
+    for(u32Index = 0u; u32Index < u32Len; u32Index++)
+    {
+        u8crc ^= u8Data[u32Index];
+    }
+    return (u8crc);
+}
+
+/* Calculate CRC
+CCU1_REQUEST_CRC() 
+{
+  DataLength =CCU1_REQUEST.DLC-1;
+  DataArray[0] = CCU1_REQUEST.BYTE(1);
+  DataArray[1] = CCU1_REQUEST.BYTE(2);
+  DataArray[2] = CCU1_REQUEST.BYTE(3);
+  DataArray[3] = CCU1_REQUEST.BYTE(4);
+  DataArray[4] = CCU1_REQUEST.BYTE(5);
+  DataArray[5] = CCU1_REQUEST.BYTE(6);
+  DataArray[6] = CCU1_REQUEST.BYTE(7); 
+  CCU1_REQUEST.BYTE(0)= Crc8_u8Calculate(DataArray, DataLength);
+}*/
