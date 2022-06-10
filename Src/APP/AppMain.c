@@ -78,10 +78,11 @@
 #include "Pwm.h"
 #include "Sensor.h"
 #include "Actuator.h"
+#include "Fan.h"
 /******************************************************************************/
 /* DEFINES                                                                    */
 /******************************************************************************/
-
+#define ZERO ((uint16)0)
 /******************************************************************************/
 /* CONSTANTS DEFINITION                                                       */
 /******************************************************************************/
@@ -228,108 +229,22 @@ uint8 u8CanBuffer[sizeof(AppDiag_tstrSendToPcDisplayData) + sizeof(u8CanSendHead
 #endif
 extern void AppMain_vidSlowManage(void)
 {
-#if 1
     AppMbdInterface_vidManage();
-#else
-	{
-        static uint8 LOC_u8Step = 0u;
-		static uint8 LOC_u8StepCnt = 0u;
-		switch(LOC_u8Step)
-		{
-          case 0:
-			LOC_u8Step = 1u;
-			StdLibSS_vidDataSetU8(AppDiag_uniSendToPcDisplayData.u8DataAll,0X01,sizeof(AppDiag_tstrSendToPcDisplayData));
-		  break;
-
-		  case 1:
-		  if(LOC_u8StepCnt < 10)
-		  {
-			  LOC_u8StepCnt++;
-		  }
-		  else
-		  {
-			 LOC_u8StepCnt = 0u;
-			 LOC_u8Step = 2u;
-		  }
-		  break;
-
-		  case 2:
-		    StdLibSS_vidDataSetU8(AppDiag_uniSendToPcDisplayData.u8DataAll,0X02,sizeof(AppDiag_tstrSendToPcDisplayData));
-		    LOC_u8Step = 3u;
-		  break;
-
-	      case 3:
-		  if(LOC_u8StepCnt < 10)
-		  {
-			  LOC_u8StepCnt++;
-		  }
-		  else
-		  {
-			 LOC_u8StepCnt = 0u;
-			 LOC_u8Step = 0u;
-		  }
-		  break;	  
-		}
-
-
-	}
-#endif
-	
-#if 0
-    /*Uart Send Data To PC Display*/
-    {
-         uint8 u8Index;
-	 for(u8Index = 0u; u8Index < sizeof(u8UartBuffer)/sizeof(u8UartBuffer[0]); u8Index++)
-	 {
-	     if(u8Index < sizeof(u8UartSendHead)/sizeof(u8UartSendHead[0]))
-	     {
-                u8UartBuffer[u8Index] = u8UartSendHead[u8Index];
-	     }
-	     else
-	     {
-                u8UartBuffer[u8Index] = AppDiag_uniSendToPcDisplayData.u8DataAll[u8Index - sizeof(u8UartSendHead)/sizeof(u8UartSendHead[0])];
-	     }
-	 }
-	 {
-	     static uint8 LOC_u8UartSentCnt = 0u;
-	     if(LOC_u8UartSentCnt < 10)
-	     {
-		 LOC_u8UartSentCnt++;
-	     }
-	     else
-	     {
-		 UART_vidWriteBuffer(u8UartBuffer, sizeof(u8UartBuffer)/sizeof(u8UartBuffer[0]));
-	     }
-	 }
-    }
-#endif
-#if 0
-    /*CAN APP Frame Send Data To PC Display*/
-    {
-		uint8 u8Index;
-		for(u8Index = 0u; u8Index < sizeof(u8CanBuffer)/sizeof(u8CanBuffer[0]); u8Index++)
-		{
-			if(u8Index < sizeof(u8CanSendHead)/sizeof(u8CanSendHead[0]))
-			{
-                u8CanBuffer[u8Index] = u8CanSendHead[u8Index];
-			}
-			else
-			{
-                u8CanBuffer[u8Index] = AppDiag_uniSendToPcDisplayData.u8DataAll[u8Index - sizeof(u8CanSendHead)/sizeof(u8CanSendHead[0])];
-			}
-		}
-		{
-			static uint8 LOC_u8CanSendCnt = 0u;
-			if(LOC_u8CanSendCnt < 10)
-			{
-				LOC_u8CanSendCnt++;
-			}
-			else
-			{
-				Can_vidSendBuffer(u8CanBuffer, sizeof(u8CanBuffer)/sizeof(u8CanBuffer[0]));
-			}
-		} 
-    }
-#endif
 }
+extern void AppMain_vidDefault(void)
+{
+    vidAppEdcMng(0u);
 
+    //exv position set
+    ExvDrv_vidSetDestStepPosition(u8EXV_CHILLER_ID,576u);
+    ExvDrv_vidSetDestStepPosition(u8EXV_EVAP_ID,576u);
+    //ptc power output
+    vidAppHvchMng(0u);
+    //pump power output
+    PumpHVAC_vidSetSpdReq(0u);
+    PumpBat_vidSetSpdReq(0u);
+    PumpMotor_vidSetSpdReq(0u);	
+    //fan set
+    Fun_vidSetFunDuty(Fun1 , 0u);   
+    //Fun_vidSetFunDuty(Fun1 , 0u);  
+}

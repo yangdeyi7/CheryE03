@@ -152,6 +152,8 @@ void SchM_vidTask100ms( void )
    }
    else
    {
+     System_vidMngDefault();
+     AppMain_vidDefault();
      /*do nothing*/
    }
    /*! set Task finish flag*/

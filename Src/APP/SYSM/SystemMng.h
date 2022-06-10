@@ -83,7 +83,7 @@ extern SYSTEM_tstrApp_Data  SYSTEM_strApp_Data;
 
 extern void System_vidMngInit(void);
 extern void System_vidMngRegulation(void);
-
+extern void System_vidMngDefault(void);
 #endif  /* XXX_H */ 
 
 /*-------------------------------- end of file -------------------------------*/

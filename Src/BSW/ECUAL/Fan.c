@@ -231,7 +231,7 @@ extern void Fun_vidInit(void)
     }
     /*use default*/
     Fun_vidSetContext(Fun_aku16PwmLvlDefaultVal);
-
+    Fun_vidSetFunDuty(Fun1 , 0u);
 
 }/* End of Fun_vidInit() */
 

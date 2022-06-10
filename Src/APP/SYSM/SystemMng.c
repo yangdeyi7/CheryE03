@@ -62,7 +62,7 @@ static void System_vidWorkDefault(void)
     //SYSTEM_uniReceive_Press_ECP.strChangeJudge.bAutoPress = FALSE;
     IfRteApp_Set_WorkSts(SYSTEM_strApp_Data.u8WorkSts);   
 }
-static void System_vidMngDefault(void)
+void System_vidMngDefault(void)
 {
     System_vidWorkDefault();
     System_vidACDefault();

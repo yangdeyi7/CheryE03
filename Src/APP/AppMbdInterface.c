@@ -582,10 +582,10 @@ extern void AppMbdInterface_vidInit(void)
 
 extern void AppMbdInterface_vidManage(void)
 {
-  //mbd input
   vidHpMbdInterfaceRefreshInput();
   //add model step function start
   Sokon_X01_Thm_step();
+  //add model step function end
   vidAppMbdInterfaceRefreshOutput(); 
 }
 
